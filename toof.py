@@ -53,12 +53,15 @@ def cli(ctx):
 def add(name, secret, alias=None):
     print(f"Add account {name}")
     secrets.set_account_secret(account_id=name, secret=secret)
+    if alias is not None:
+        aliases.add_alias(name, alias)
 
 @cli.command()
 @click.argument("name")
 @click.argument("alias")
 def alias(name, alias):
     print(f"Add alias {alias} to account {name}")
+    aliases.add_alias(name, alias)
 
 @cli.command()
 @click.argument("name")

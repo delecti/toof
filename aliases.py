@@ -1,5 +1,5 @@
 import json
-from pathlib import Path
+from pathlib import PosixPath
 from typing import Optional
 from configparser import ConfigParser
 
@@ -17,18 +17,19 @@ def lookup_by_alias(alias: str) -> Optional[str]:
             return accountid[0]
     return None
 
-
 def add_alias(account: str, alias: str):
     config = load()
     if not config.has_section(aliasesgroup):
-        return
-    aliasstr = config.get(aliasesgroup, account)
+        config.add_section(aliasesgroup)
+        aliasstr = ""
+    else:
+        aliasstr = config.get(aliasesgroup, account)
     if aliasstr is not None:
         aliases = aliasstr.split()
         aliases.append(alias)
     else:
         aliases = [alias]
-    load().set(aliasesgroup, account, ' '.join(aliases))
+    config.set(aliasesgroup, account, ' '.join(aliases))
     write()
 
 def remove_alias(account: str, alias: str):
@@ -37,7 +38,7 @@ def remove_alias(account: str, alias: str):
 def load():
     global _configpath,_config
     if _configpath is None:
-        _configpath = Path.home() / ".config/toof/config.ini"
+        _configpath = PosixPath("~/.config/toof/config.ini").expanduser()
     if _config is None:
         _config = ConfigParser()
         _config.read(_configpath)
@@ -45,7 +46,10 @@ def load():
 
 def write():
     global _configpath
-    load().write(_configpath)
+    print("doing a write? " + str(_configpath))
+    # if not _configpath.exists():
+
+    load().write(_configpath.open('w+'))
 
 
 # def get_secret(nickname: str) -> str:

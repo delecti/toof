@@ -3,6 +3,7 @@ from totp import TOTP_SHA1
 import aliases
 import secrets
 import base64
+import pyperclip
 
 class DefaultGroup(click.Group):
     def get_command(self, ctx, cmd_name):
@@ -78,8 +79,9 @@ def generate(ctx, name):
         name = ctx.obj
     totp = TOTP_SHA1()
     totp.K = base64.b32decode(secrets.get_account_secret(name), casefold=True)
-    print(f"Outputting code for {name}")
-    print(totp.hotp(totp.counter_now()))
+    code = str(totp.hotp(totp.counter_now())).zfill(6)
+    print(f"Outputting code for {name}, {code}")
+    pyperclip.copy(code)
 
 if __name__ == "__main__":
     cli()

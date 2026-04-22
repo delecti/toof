@@ -4,6 +4,7 @@ import time
 import struct
 import os
 import math
+import base64
 
 class TOTP_SHA1:
     def __init__(self):
@@ -75,6 +76,11 @@ class TOTP_SHA1:
         snum = self._dt(hmac_result)
         return snum % (10 ** digits)
 
+def quickgen(secret: str):
+    totp = TOTP_SHA1()
+    secret += "=" * (-len(secret) % 8)
+    totp.K = base64.b32decode(secret, casefold=True)
+    return str(totp.hotp(totp.counter_now())).zfill(6)
 
 if __name__ == "__main__":
     totp = TOTP_SHA1()

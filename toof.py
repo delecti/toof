@@ -1,5 +1,5 @@
 import click
-from totp import TOTP_SHA1
+from totp import quickgen
 import aliases
 import secrets
 import base64
@@ -25,7 +25,7 @@ class DefaultGroup(click.Group):
 @click.group(invoke_without_command=True, cls=DefaultGroup)
 @click.pass_context
 def cli(ctx):
-    print(f"cli! ctx: {repr(ctx)}")
+    # print(f"cli! ctx: {repr(ctx)}")
     account_id = aliases.lookup_by_alias(ctx.obj)
     # print(f"result account {account_id} for nickname {ctx.obj}")
     if account_id is not None:
@@ -41,8 +41,9 @@ def add(name, secret, alias=None):
     """Adds a new account, optionally with an alias.\n
     Usage: toof add <account> <secret> [alias]\n
     Example: toof add Google ONXGKYLLPEFA==== goog"""
-    print(f"Add account {name}")
-    secrets.set_account_secret(account_id=name, secret=secret)
+    err = secrets.set_account_secret(account_id=name, secret=secret)
+    if err is not None:
+        raise click.ClickException(err)
     if alias is not None:
         aliases.add_alias(name, alias)
 
@@ -53,7 +54,6 @@ def alias(name, alias):
     """Adds an alias for a given account.\n
     Usage: toof alias <account> <alias>\n
     Example: toof alias Google goog"""
-    print(f"Add alias {alias} to account {name}")
     aliases.add_alias(name, alias)
 
 @cli.command()
@@ -71,6 +71,7 @@ def remove(name):
     """Remove an account's entry along with all aliases.\n
     Usage: toof remove <account>
     Example: toof remove Google"""
+    # TODO: Implement
     print(f"Remove account {name}")
 
 @cli.command()
@@ -85,10 +86,16 @@ def generate(ctx, name):
     """
     if name is None:
         name = ctx.obj
-    totp = TOTP_SHA1()
-    totp.K = base64.b32decode(secrets.get_account_secret(name), casefold=True)
-    code = str(totp.hotp(totp.counter_now())).zfill(6)
+    secret = secrets.get_account_secret(name)
+    code = quickgen(secret)
     print(f"Outputting code for {name}, {code}")
+    pyperclip.copy(code)
+
+@cli.command()
+@click.argument("secret", required=True)
+def rawgen(secret):
+    code = quickgen(secret)
+    print(f"Raw generated code: {code}")
     pyperclip.copy(code)
 
 if __name__ == "__main__":

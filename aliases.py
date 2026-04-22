@@ -1,4 +1,3 @@
-import json
 from pathlib import PosixPath
 from typing import Optional
 from configparser import ConfigParser
@@ -13,7 +12,7 @@ def lookup_by_alias(alias: str) -> Optional[str]:
         return None
     data = config.items(aliasesgroup)
     for accountid in data:
-        if alis in accountid[1].split():
+        if alias in accountid[1].split() or alias == accountid[0]:
             return accountid[0]
     return None
 
@@ -21,19 +20,27 @@ def add_alias(account: str, alias: str):
     config = load()
     if not config.has_section(aliasesgroup):
         config.add_section(aliasesgroup)
-        aliasstr = ""
+        aliases = []
     else:
-        aliasstr = config.get(aliasesgroup, account)
-    if aliasstr is not None:
-        aliases = aliasstr.split()
+        aliases = config.get(aliasesgroup, account).split()
+    if alias not in aliases:
         aliases.append(alias)
-    else:
-        aliases = [alias]
-    config.set(aliasesgroup, account, ' '.join(aliases))
-    write()
+        config.set(aliasesgroup, account, ' '.join(aliases))
+        write()
 
 def remove_alias(account: str, alias: str):
-    accounts = load().items(aliasesgroup)
+    config = load()
+    print('remove_alias')
+    if not config.has_section(aliasesgroup):
+        print('entry already didn\'t exist')
+        return
+    aliases = config.get(aliasesgroup, account).split()
+    if alias in aliases:
+        aliases.remove(alias)
+        config.set(aliasesgroup, account, ' '.join(aliases))
+        write()
+    else:
+        print('alias already didn\'t exist')
 
 def load():
     global _configpath,_config

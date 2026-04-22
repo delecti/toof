@@ -32,25 +32,15 @@ def cli(ctx):
         print(f"found account {account_id} for nickname {repr(ctx)}")
         exit()
     pass
-    # if ctx.invoked_subcommand is None:
-    #     account_id = loader.lookup(ctx.obj)
-    #     if account_id is not None:
-    #         # if we recognize the alias, generate a code for it
-    #         print(f"AccountId is {account_id}")
-    #         ctx.invoke(generate, name=account_id)
-    #     else:
-    #         # if we don't recognize the alias, assume the user messed up
-    #         click.echo(f"Error: alias {ctx.obj} not found", err=True)
-    #         raise SystemExit(1)
-    # else:
-    #     print(f"invoked subcommand is not none?")
-    #     # ctx.invoke(generate, name=None)
 
 @cli.command()
 @click.argument("name")
 @click.argument("secret")
 @click.argument("alias")
 def add(name, secret, alias=None):
+    """Adds a new account, optionally with an alias.\n
+    Usage: toof add <account> <secret> [alias]\n
+    Example: toof add Google ONXGKYLLPEFA==== goog"""
     print(f"Add account {name}")
     secrets.set_account_secret(account_id=name, secret=secret)
     if alias is not None:
@@ -60,6 +50,9 @@ def add(name, secret, alias=None):
 @click.argument("name")
 @click.argument("alias")
 def alias(name, alias):
+    """Adds an alias for a given account.\n
+    Usage: toof alias <account> <alias>\n
+    Example: toof alias Google goog"""
     print(f"Add alias {alias} to account {name}")
     aliases.add_alias(name, alias)
 
@@ -67,17 +60,29 @@ def alias(name, alias):
 @click.argument("name")
 @click.argument("alias")
 def dealias(name, alias):
-    print(f"Remove alias {alias} from account {name}")
+    """Remove an alias for a given account.\n
+    Usage: toof dealias <account> <alias>\n
+    Example: toof dealias Google goog"""
+    aliases.remove_alias(name, alias)
 
 @cli.command()
 @click.argument("name")
 def remove(name):
+    """Remove an account's entry along with all aliases.\n
+    Usage: toof remove <account>
+    Example: toof remove Google"""
     print(f"Remove account {name}")
 
 @cli.command()
 @click.argument("name", required=False, default=None)
 @click.pass_context
 def generate(ctx, name):
+    """Generate a code for an account or alias. This is also the default
+    behavior if no command is specified. It will display the code and place
+    it in the system clipboard for pasting.\n
+    Usage: toof [generate] <alias/account>\n
+    Example: toof goog
+    """
     if name is None:
         name = ctx.obj
     totp = TOTP_SHA1()

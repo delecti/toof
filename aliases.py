@@ -17,18 +17,21 @@ def lookup_by_alias(alias: str) -> Optional[str]:
     return None
 
 def add_alias(account: str, alias: str):
+    account = account.lower() # configparser only stores lowercase keys
     config = load()
     if not config.has_section(aliasesgroup):
         config.add_section(aliasesgroup)
-        aliases = []
-    else:
+    if config.has_option(aliasesgroup, account):
         aliases = config.get(aliasesgroup, account).split()
+    else:
+        aliases = []
     if alias not in aliases:
         aliases.append(alias)
         config.set(aliasesgroup, account, ' '.join(aliases))
         write()
 
 def remove_alias(account: str, alias: str):
+    account = account.lower() # configparser only stores lowercase keys
     config = load()
     print('remove_alias')
     if not config.has_section(aliasesgroup):

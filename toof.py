@@ -2,7 +2,6 @@ import click
 from totp import quickgen
 import aliases
 import secrets
-import base64
 import pyperclip
 
 class DefaultGroup(click.Group):

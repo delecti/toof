@@ -6,7 +6,7 @@ import pyperclip
 
 class DefaultGroup(click.Group):
     def get_command(self, ctx, cmd_name):
-        print(f"get_command! ctx: {ctx} and cmd_name: {cmd_name}")
+        # print(f"get_command! ctx: {ctx} and cmd_name: {cmd_name}")
         account_id = aliases.lookup_by_alias(cmd_name)
         if account_id is not None:
             # if we recognize the alias, generate a code for it
@@ -68,6 +68,7 @@ def dealias(name, alias):
 @click.argument("name")
 def remove(name):
     """Remove an account's entry along with all aliases.\n
+    Note this is not yet implemented.\n
     Usage: toof remove <account>
     Example: toof remove Google"""
     # TODO: Implement
@@ -85,12 +86,17 @@ def generate(ctx, name):
     """
     if name is None:
         name = ctx.obj
+        if name is None:
+            click.echo(ctx.get_help())
+            return
     secret = secrets.get_account_secret(name)
-    code = quickgen(secret)
-    print(f"Outputting code for {name}, {code}")
-    pyperclip.copy(code)
+    if (secret is not None):
+        code = quickgen(secret)
+        print(f"Outputting code for {name}, {code}")
+        pyperclip.copy(code)
+    else:
+        click.echo(ctx.get_help())
 
-@cli.command()
 @click.argument("secret", required=True)
 def rawgen(secret):
     code = quickgen(secret)

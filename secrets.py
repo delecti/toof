@@ -10,7 +10,7 @@ def get_account_secret(account_id: str) -> Optional[str]:
     if credential is not None:
         return credential.password
     else:
-        raise click.ClickException(f"No credential stored for account '{account_id}'")
+        return None
 
 def set_account_secret(account_id: str, secret: str) -> str:
     account_id = account_id.lower() # configparser only stores lowercase

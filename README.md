@@ -2,11 +2,12 @@
 
 A simple CLI application for generating MFA codes.
 
-# Requirements
+# Build Requirements
 
 - Python3
 - Keyring
 - Pyperclip
+- Pyinstaller
 
 # Running
 
@@ -18,11 +19,13 @@ A simple CLI application for generating MFA codes.
 `toof help` - Print instructions for using the commands.  
 
 # Examples
+`$ toof add testservice MZXW6CQ test`  
+`$ toof test`  
+`AccountId is testservice`  
+`Outputting code for testservice, 276738`  
 
-$ toof add testservice MZXW6CQ test  
-$ toof test  
-AccountId is testservice  
-Outputting code for testservice, 276738
+# Build instructions
+`$ pyinstaller --onefile toof.py`  
 
 # Installation
-sudo cp dist/toof /usr/bin
+`$ cp dist/toof /usr/bin`  

@@ -81,7 +81,6 @@ def dealias(name, alias):
 @click.argument("name")
 def remove(name):
     """Remove an account's entry along with all aliases.\n
-    Note this is not yet implemented.\n
     Usage: toof remove <account>
     Example: toof remove Google"""
     account = aliases.lookup_by_alias(name)
@@ -89,11 +88,11 @@ def remove(name):
         aliaslist = ', '.join(aliases.get_all_aliases(account).split())
         if secrets.does_account_exist(account):
             # ask to delete both
-            if not click.confirm(f"Account {name} has aliases: {aliaslist}. Remove account and all its aliases?"):
+            if not click.confirm(f"Account {account} has aliases: {aliaslist}. Remove account and all its aliases?"):
                 return
             secrets.delete_account(name)
             aliases.delete_account(name)
-            print(f"Removed account {name} and its aliases.")
+            print(f"Removed account {account} and its aliases.")
         else: 
             # no secret, but ask to delete aliases
             if not click.confirm(f"No secret found. Clean up aliases '{aliaslist}' for account {name}?"):
@@ -112,8 +111,7 @@ def generate(ctx, name):
     behavior if no command is specified. It will display the code and place
     it in the system clipboard for pasting.\n
     Usage: toof [generate] <alias/account>\n
-    Example: toof goog
-    """
+    Example: toof goog"""
     if name is None:
         name = ctx.obj
         if name is None:
@@ -130,6 +128,10 @@ def generate(ctx, name):
 @cli.command()
 @click.argument("secret", required=True)
 def rawgen(secret):
+    """Generate a code directly from a secret. It will display the code
+    and place it in the system clipboard for pasting.\n
+    Usage: toof rawgen <secret>
+    Example: toof rawgen ONXGKYLLPEFA===="""
     code = quickgen(secret)
     print(f"Generated code: {code}")
     pyperclip.copy(code)

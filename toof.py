@@ -3,14 +3,17 @@ from totp import quickgen
 import aliases
 import secrets
 import pyperclip
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DefaultGroup(click.Group):
     def get_command(self, ctx, cmd_name):
-        # print(f"get_command! ctx: {ctx} and cmd_name: {cmd_name}")
+        logger.debug(f"get_command! ctx: {ctx} and cmd_name: {cmd_name}")
         account_id = aliases.lookup_by_alias(cmd_name)
         if account_id is not None:
             # if we recognize the alias, generate a code for it
-            print(f"AccountId is {account_id}")
+            logger.debug(f"AccountId is {account_id}")
             ctx.invoke(generate, name=account_id)
             raise SystemExit(1)
         else:
@@ -23,19 +26,20 @@ class DefaultGroup(click.Group):
 
 @click.group(invoke_without_command=True, cls=DefaultGroup)
 @click.pass_context
-def cli(ctx):
-    # print(f"cli! ctx: {repr(ctx)}")
+@click.option("--debug", is_flag=True, help="Enable debug logging")
+def cli(ctx, debug):
+    logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
     account_id = aliases.lookup_by_alias(ctx.obj)
-    # print(f"result account {account_id} for nickname {ctx.obj}")
+    logger.debug(f"Found account {account_id} for nickname {ctx.obj}")
     if account_id is not None:
-        print(f"found account {account_id} for nickname {repr(ctx)}")
+        logger.debug(f"found account {account_id} for nickname {repr(ctx)}")
         exit()
     pass
 
 @cli.command()
 @click.argument("name")
 @click.argument("secret")
-@click.argument("alias")
+@click.argument("alias", required=False, default=None)
 def add(name, secret, alias=None):
     """Adds a new account, optionally with an alias.\n
     Usage: toof add <account> <secret> [alias]\n
@@ -45,6 +49,7 @@ def add(name, secret, alias=None):
         raise click.ClickException(err)
     if alias is not None:
         aliases.add_alias(name, alias)
+    print(f"Added account {name}.")
 
 @cli.command()
 @click.argument("name")
@@ -54,6 +59,7 @@ def alias(name, alias):
     Usage: toof alias <account> <alias>\n
     Example: toof alias Google goog"""
     aliases.add_alias(name, alias)
+    print(f"Alias {alias} added to account {name}.")
 
 @cli.command()
 @click.argument("name")
@@ -62,7 +68,14 @@ def dealias(name, alias):
     """Remove an alias for a given account.\n
     Usage: toof dealias <account> <alias>\n
     Example: toof dealias Google goog"""
+    account = aliases.lookup_by_alias(alias)
+    if not name == account:
+        print(f"Alias {alias} is not an alias for account {name}")
+        return
+    elif not click.confirm(f"Remove alias {alias} from account {name}?"):
+        return
     aliases.remove_alias(name, alias)
+    print(f"Alias {alias} removed from account {name}.")
 
 @cli.command()
 @click.argument("name")
@@ -71,8 +84,25 @@ def remove(name):
     Note this is not yet implemented.\n
     Usage: toof remove <account>
     Example: toof remove Google"""
-    # TODO: Implement
-    print(f"Remove account {name}")
+    account = aliases.lookup_by_alias(name)
+    if account is not None:
+        aliaslist = ', '.join(aliases.get_all_aliases(account).split())
+        if secrets.does_account_exist(account):
+            # ask to delete both
+            if not click.confirm(f"Account {name} has aliases: {aliaslist}. Remove account and all its aliases?"):
+                return
+            secrets.delete_account(name)
+            aliases.delete_account(name)
+            print(f"Removed account {name} and its aliases.")
+        else: 
+            # no secret, but ask to delete aliases
+            if not click.confirm(f"No secret found. Clean up aliases '{aliaslist}' for account {name}?"):
+                return
+            aliases.delete_account(name)
+            print(f"Cleaned up lingering aliases for account {name}.")
+    else:
+        # print error that it doesn't exist
+        print(f"Nothing found to delete for account {name}.")
 
 @cli.command()
 @click.argument("name", required=False, default=None)
@@ -92,24 +122,17 @@ def generate(ctx, name):
     secret = secrets.get_account_secret(name)
     if (secret is not None):
         code = quickgen(secret)
-        print(f"Outputting code for {name}, {code}")
+        print(f"Outputting code for {name}: {code}")
         pyperclip.copy(code)
     else:
         click.echo(ctx.get_help())
 
+@cli.command()
 @click.argument("secret", required=True)
 def rawgen(secret):
     code = quickgen(secret)
-    print(f"Raw generated code: {code}")
+    print(f"Generated code: {code}")
     pyperclip.copy(code)
 
 if __name__ == "__main__":
     cli()
-
-"""
-{"add", "adds the specified OTP entry", "<name>", "<},
-{"alias", "adds an alias to the specified OTP entry", "<name> <alias>"},
-{"dealias", "deletes an alias from the specified OTP entry", "<name> <alias>"},
-{"help", "prints this output, or instructions for a command", "<command>"},
-{"remove", "remove the specified OTP entry", "<name>"},
-"""

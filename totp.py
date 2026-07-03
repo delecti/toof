@@ -1,3 +1,7 @@
+"""
+Sourced from https://rosettacode.org/wiki/Time-based_one-time_password_algorithm#Python
+Which is available under GNU Free Document License 1.3
+"""
 import hmac
 import hashlib
 import time

@@ -1,12 +1,15 @@
 from pathlib import PosixPath
 from typing import Optional
 from configparser import ConfigParser
+import logging
 
 aliasesgroup = "aliases"
 _config = None
 _configpath = None
+logger = logging.getLogger(__name__)
 
 def lookup_by_alias(alias: str) -> Optional[str]:
+    logger.debug(f"lookup_by_alias alias '{alias}'")
     config = load()
     if not config.has_section(aliasesgroup):
         return None
@@ -16,7 +19,18 @@ def lookup_by_alias(alias: str) -> Optional[str]:
             return accountid[0]
     return None
 
+def get_all_aliases(account: str) -> str:
+    logger.debug(f"get_all_aliases account '{account}'")
+    config = load()
+    if not config.has_section(aliasesgroup):
+        return None
+    if config.has_option(aliasesgroup, account):
+        return config.get(aliasesgroup, account)
+    else:
+        return ""
+
 def add_alias(account: str, alias: str):
+    logger.debug(f"add_alias account '{account}' alias '{alias}'")
     account = account.lower() # configparser only stores lowercase keys
     config = load()
     if not config.has_section(aliasesgroup):
@@ -30,22 +44,37 @@ def add_alias(account: str, alias: str):
         config.set(aliasesgroup, account, ' '.join(aliases))
         write()
 
+def delete_account(account: str):
+    logger.debug(f"delete_account account '{account}'")
+    account = account.lower()
+    config = load()
+    if not config.has_section(aliasesgroup):
+        print("No alias data found.")
+        return
+    if not config.has_option(aliasesgroup, account):
+        print(f"No alias data found for account '{account}'")
+        return
+    config.remove_option(aliasesgroup, account)
+    write()
+
 def remove_alias(account: str, alias: str):
+    logger.debug(f"remove_alias account '{account}' alias '{alias}'")
     account = account.lower() # configparser only stores lowercase keys
     config = load()
-    print('remove_alias')
     if not config.has_section(aliasesgroup):
-        print('entry already didn\'t exist')
+        print(f"Account {account} not found.")
         return
     aliases = config.get(aliasesgroup, account).split()
     if alias in aliases:
         aliases.remove(alias)
         config.set(aliasesgroup, account, ' '.join(aliases))
+        print(f"Alias {alias} removed from account {account}.")
         write()
     else:
-        print('alias already didn\'t exist')
+        print(f"Alias {alias} not found for account {account}.")
 
 def load():
+    logger.debug("load")
     global _configpath,_config
     if _configpath is None:
         _configpath = PosixPath("~/.config/toof/config.ini").expanduser()
@@ -55,32 +84,7 @@ def load():
     return _config
 
 def write():
+    logger.debug("write")
     global _configpath
-    print("doing a write? " + str(_configpath))
-    # if not _configpath.exists():
-
+    logger.debug("Writing config to path: " + str(_configpath))
     load().write(_configpath.open('w+'))
-
-
-# def get_secret(nickname: str) -> str:
-#     with open(Path.home() / ".config/toof/prettyauth.json") as f:
-#         data = json.load(f)
-#     for accountid in data["nicknames"]:
-#         if nickname in data["nicknames"][accountid]:
-#             account_id = accountid
-#             break
-#     if account_id is None:
-#         raise ValueError(f"Account {account_id} not found")
-#     for account in data["accounts"]:
-#         if account["accountID"] == account_id:
-#             return account["secret"]
-#     raise ValueError(f"Account {account_id} not found")
-
-# def lookup_by_alias(alias: str) -> Optional[str]:
-#     with open(Path.home() / ".config/toof/prettyauth.json") as f:
-#         data = json.load(f)
-#     for accountid in data["nicknames"]:
-#         # print(f"looking for nickname {alias} in account {accountid}")
-#         if alias in data["nicknames"][accountid]:
-#             return accountid
-#     return None
